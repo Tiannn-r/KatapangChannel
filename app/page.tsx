@@ -1,62 +1,122 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
+import ConversationList from "@/components/ConversationList";
+import ChatWindow from "@/components/ChatWindow";
+import ContactInfo from "@/components/ContactInfo";
+import { conversations as initialConversations } from "@/data/conversations";
 
 export default function Home() {
-  const [nama, setNama] = useState('')
-  const [channel, setChannel] = useState('whatsapp')
-  const [identifier, setIdentifier] = useState('')
-  const [label, setLabel] = useState('')
-  const [status, setStatus] = useState('')
+  // =========================
+  // CONVERSATIONS
+  // =========================
+  const [conversations, setConversations] = useState(initialConversations);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setStatus('Mengirim...')
+  // =========================
+  // SELECTED CONVERSATION
+  // =========================
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
-    const res = await fetch('/api/contacts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, channel, identifier, label }),
-    })
+  // =========================
+  // CONTACT INFO
+  // =========================
+  const [showContactInfo, setShowContactInfo] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
 
-    const result = await res.json()
+  // =========================
+  // TOGGLE STARRED
+  // =========================
+  const toggleStarred = (conversationId: any) => {
+    setConversations((prev: any[]) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, starred: !conversation.starred }
+          : conversation
+      )
+    );
 
-    if (res.ok) {
-      setStatus('Berhasil ditambahkan!')
-      setNama('')
-      setIdentifier('')
-      setLabel('')
-    } else {
-      setStatus('Error: ' + result.error)
+    if (selectedConversation?.id === conversationId) {
+      setSelectedConversation((prev: any) => ({
+        ...prev,
+        starred: !prev?.starred,
+      }));
     }
-  }
+  };
+
+  // =========================
+  // UPDATE LABEL
+  // =========================
+  const updateLabel = (conversationId: any, label: string) => {
+    setConversations((prev: any[]) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, label }
+          : conversation
+      )
+    );
+
+    if (selectedConversation?.id === conversationId) {
+      setSelectedConversation((prev: any) => ({
+        ...prev,
+        label,
+      }));
+    }
+  };
+
+  const handleSelectConversation = (conversation: any) => {
+    setConversations((previousConversations: any[]) =>
+      previousConversations.map((item) =>
+        item.id === conversation.id ? { ...item, unread: 0 } : item
+      )
+    );
+    setSelectedConversation({ ...conversation, unread: 0 });
+    setListOpen(false);
+  };
 
   return (
-    <main style={{ padding: '40px', fontFamily: 'sans-serif' }}>
-      <h1>Tambah Contact</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '300px' }}>
-        <input
-          placeholder="Nama"
-          value={nama}
-          onChange={(e) => setNama(e.target.value)}
+    <div className="app">
+      <button
+        type="button"
+        className="mobile-inbox-toggle"
+        onClick={() => setListOpen((previous) => !previous)}
+        aria-expanded={listOpen}
+        aria-controls="conversation-list-panel"
+        aria-label={listOpen ? "Tutup daftar percakapan" : "Buka daftar percakapan"}
+      >
+        <span aria-hidden="true">{listOpen ? "‹" : "☰"}</span>
+      </button>
+      {listOpen && (
+        <button
+          type="button"
+          className="mobile-inbox-backdrop"
+          onClick={() => setListOpen(false)}
+          aria-label="Tutup daftar percakapan"
         />
-        <select value={channel} onChange={(e) => setChannel(e.target.value)}>
-          <option value="whatsapp">WhatsApp</option>
-          <option value="instagram">Instagram</option>
-        </select>
-        <input
-          placeholder="Nomor HP / Username IG"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+      )}
+      <ConversationList
+        id="conversation-list-panel"
+        isOpen={listOpen}
+        conversations={conversations}
+        selectedConversation={selectedConversation}
+        onSelectConversation={handleSelectConversation}
+        onToggleStar={toggleStarred}
+      />
+
+      {/* CHAT */}
+      <ChatWindow
+        conversation={selectedConversation}
+        onOpenContact={() => setShowContactInfo(true)}
+        onToggleStar={toggleStarred}
+      />
+
+      {/* CONTACT INFO */}
+      {showContactInfo && selectedConversation && (
+        <ContactInfo
+          conversation={selectedConversation}
+          onClose={() => setShowContactInfo(false)}
+          onUpdateLabel={updateLabel}
         />
-        <input
-          placeholder="Label (contoh: Calon siswa, Umum) - opsional"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-        />
-        <button type="submit">Simpan</button>
-      </form>
-      {status && <p>{status}</p>}
-    </main>
-  )
+      )}
+    </div>
+  );
 }
