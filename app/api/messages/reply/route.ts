@@ -12,11 +12,21 @@ export async function POST(request: Request) {
     )
     }
 
+    const phoneNumberId = process.env.META_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const accessToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
+
+    if (!phoneNumberId || !accessToken) {
+        return NextResponse.json(
+            { error: 'Kredensial Meta WhatsApp (Phone Number ID / Access Token) belum dikonfigurasi di .env.local' },
+            { status: 500 }
+        );
+    }
+
     const metaResponse = await fetch(
-        `https://graph.facebook.com/v17.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+        `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+                Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({

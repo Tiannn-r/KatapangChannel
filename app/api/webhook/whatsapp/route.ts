@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
-const VerifyToken = 'Katapang123'
+const VerifyToken = process.env.META_VERIFY_TOKEN || 'Katapang123'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL (request.url)
