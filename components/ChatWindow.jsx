@@ -1,14 +1,34 @@
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { MessageCircle } from "lucide-react";
-
-import { messages as initialMessages } from "../data/Massages";
 
 import ChatHeader from "./ChatHeader";
 import MessageBubble from "./MassageBubble";
 import MessageInput from "./MassagesInput";
 
-function ChatWindow({ conversation, onOpenContact, onToggleStar }) {
-  const [messages, setMessages] = useState(initialMessages);
+/**
+ * @param {{
+ *   conversation: any,
+ *   messages?: any[],
+ *   onSendMessage: (text: string) => void,
+ *   onOpenContact?: () => void,
+ *   onToggleStar?: any,
+ *   isLoading?: boolean
+ * }} props
+ */
+function ChatWindow({
+  conversation,
+  messages,
+  onSendMessage,
+  onOpenContact,
+  onToggleStar,
+  isLoading = false,
+}) {
+  const messageList = messages || [];
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messageList]);
 
   if (!conversation) {
     return (
@@ -24,47 +44,42 @@ function ChatWindow({ conversation, onOpenContact, onToggleStar }) {
     );
   }
 
-  const conversationMessages = messages.filter(
-    (message) => message.conversationId === conversation.id
-  );
-
-  const handleSendMessage = (text) => {
-    const newMessage = {
-      id: Date.now(),
-      conversationId: conversation.id,
-      sender: "agent",
-      text,
-      time: new Date().toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setMessages((previousMessages) => [...previousMessages, newMessage]);
-  };
-
   return (
     <main className="chat-window">
       {/* HEADER */}
       <ChatHeader
         conversation={conversation}
         onOpenContact={onOpenContact}
-        onToggleStar={() => onToggleStar(conversation.id)}
+        onToggleStar={() => onToggleStar?.(conversation.id)}
       />
 
       {/* MESSAGES */}
       <div className="messages-container">
         <div className="date-divider">
-          <span>Hari ini</span>
+          <span>Riwayat Pesan</span>
         </div>
 
-        {conversationMessages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "30px", color: "var(--muted)" }}>
+            Memuat pesan...
+          </div>
+        ) : messageList.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
+            <p>Belum ada pesan dalam percakapan ini.</p>
+            <p style={{ fontSize: "12px", marginTop: "4px" }}>
+              Ketik balasan di bawah untuk mengirim pesan.
+            </p>
+          </div>
+        ) : (
+          messageList.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* INPUT */}
-      <MessageInput onSendMessage={handleSendMessage} />
+      <MessageInput onSendMessage={onSendMessage} />
     </main>
   );
 }
