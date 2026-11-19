@@ -22,6 +22,11 @@ export async function POST(request: Request) {
         );
     }
 
+    let cleanTo = String(to).replace(/\D/g, '');
+    if (cleanTo.startsWith('0')) {
+        cleanTo = '62' + cleanTo.slice(1);
+    }
+
     const metaResponse = await fetch(
         `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
             method: 'POST',
@@ -31,7 +36,7 @@ export async function POST(request: Request) {
             },
             body: JSON.stringify({
                 messaging_product: 'whatsapp',
-                to: to,
+                to: cleanTo,
                 type: 'text',
                 text: { body: content },
             }),
